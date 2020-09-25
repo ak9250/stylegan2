@@ -33,7 +33,7 @@ _valid_configs = [
 
 #----------------------------------------------------------------------------
 
-def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, mirror_augment, metrics):
+def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, mirror_augment, metrics, resume_pkl, resume_kimg, lrate_base):
     train     = EasyDict(run_func_name='training.training_loop.training_loop') # Options for training loop.
     G         = EasyDict(func_name='training.networks_stylegan2.G_main')       # Options for generator network.
     D         = EasyDict(func_name='training.networks_stylegan2.D_stylegan2')  # Options for discriminator network.
@@ -50,7 +50,7 @@ def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, m
     train.total_kimg = total_kimg
     train.mirror_augment = mirror_augment
     train.image_snapshot_ticks = train.network_snapshot_ticks = 10
-    sched.G_lrate_base = sched.D_lrate_base = 0.002
+    sched.G_lrate_base = sched.D_lrate_base = lrate_base
     sched.minibatch_size_base = 32
     sched.minibatch_gpu_base = 4
     D_loss.gamma = 10
@@ -114,6 +114,7 @@ def run(dataset, data_dir, result_dir, config_id, num_gpus, total_kimg, gamma, m
     kwargs = EasyDict(train)
     kwargs.update(G_args=G, D_args=D, G_opt_args=G_opt, D_opt_args=D_opt, G_loss_args=G_loss, D_loss_args=D_loss)
     kwargs.update(dataset_args=dataset_args, sched_args=sched, grid_args=grid, metric_arg_list=metrics, tf_config=tf_config)
+    kwargs.update(resume_pkl=resume_pkl, resume_kimg=resume_kimg)
     kwargs.submit_config = copy.deepcopy(sc)
     kwargs.submit_config.run_dir_root = result_dir
     kwargs.submit_config.run_desc = desc
@@ -168,6 +169,9 @@ def main():
     parser.add_argument('--gamma', help='R1 regularization weight (default is config dependent)', default=None, type=float)
     parser.add_argument('--mirror-augment', help='Mirror augment (default: %(default)s)', default=False, metavar='BOOL', type=_str_to_bool)
     parser.add_argument('--metrics', help='Comma-separated list of metrics or "none" (default: %(default)s)', default='fid50k', type=_parse_comma_sep)
+    parser.add_argument('--resume-pkl', help='pkl to resume training from: None)', default=None, type=str)
+    parser.add_argument('--resume-kimg', help='kimg to resume training from" (default: 0)', default=0, type=int)
+    parser.add_argument('--lrate-base', help='base learning rate for generator and discriminator" (default: 0.002)', default=0.002, type=float)
 
     args = parser.parse_args()
 
